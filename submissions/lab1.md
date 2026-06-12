@@ -187,4 +187,8 @@ The application exposes account-related functionality and user interaction featu
 The application provides multiple API endpoints and accepts user-controlled input. Since Juice Shop is intentionally vulnerable, injection-style attacks against search, authentication, and API functionality are realistic concerns. This maps to \*\*OWASP Top 10:2025 A04 – Injection\*\*.
 
 
+## GitHub Community
 
+I starred the course repository and the simple-container-com/api repository to keep track of useful open-source projects related to the course.
+
+I followed the course instructor, teaching assistants, and several classmates to stay connected with the course community and observe collaborative development practices on GitHub.
