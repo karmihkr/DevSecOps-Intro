@@ -94,12 +94,13 @@ I created `labs/lab2/threagile-model-secure.yaml` from the baseline model and ap
 
 ### Which rules are gone in the secure variant?
 
-The secure variant reduced the number of Elevated risks from 4 to 2. The main fixed rule category was:
+The secure variant reduced the number of Elevated risks from 4 to 2. The main fixed rule category was `unencrypted-communication`.
 
-1. `unencrypted-communication` — fixed by changing HTTP communication links to HTTPS.
+1. `unencrypted-communication@user-browser>direct-to-app-no-proxy@user-browser@juice-shop` — fixed by changing the direct user-to-application communication from HTTP to HTTPS.
+2. `unencrypted-communication@reverse-proxy>to-app@reverse-proxy@juice-shop` — fixed by changing the reverse-proxy-to-application communication from HTTP to HTTPS.
+3. `unencrypted-communication` — fixed as a broader rule category by removing plaintext HTTP communication from the model.
 
-Because this model only had two HTTP communication risks, the total dropped by 2 risks.
-
+Only two concrete risk instances disappeared, so the third item is the fixed rule category rather than a third separate instance. This is a limitation of this model's output: the secure changes removed two Elevated findings, not three distinct risk instances.
 ### Which rules are still there in the secure variant?
 
 1. `cross-site-scripting` — This risk still appears because switching transport from HTTP to HTTPS does not remove browser-side script injection issues. XSS requires input validation, output encoding, and content security controls.
