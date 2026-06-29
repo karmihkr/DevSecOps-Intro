@@ -41,7 +41,7 @@ You need:
 - **Docker** (Falco runs containerized)
 - **`jq`**
 - **`conftest`** v0.68.x — `brew install conftest` (Lab 7 bonus used this if you did it)
-- **Linux host with kernel ≥ 5.8** (for modern eBPF). On macOS/Windows, Docker Desktop's Linux VM is fine
+- **A Linux kernel with eBPF + BTF** (for Falco's modern driver). Native Linux and WSL2 (kernel ≥ 5.8) work out of the box. **macOS — including Apple Silicon — does NOT work through Docker Desktop**: its LinuxKit VM kernel ships without BTF, so Falco runs but detects nothing. Use **Colima** instead — see Common Pitfalls → "macOS / Apple Silicon"
 
 ```bash
 git switch main && git pull
@@ -446,6 +446,14 @@ PR checklist body:
 <summary>⚠️ Common Pitfalls</summary>
 
 - 🚨 **Falco fails to start with "engine.kind not detected"** — your kernel might be < 5.8 (no modern eBPF). Fall back to the legacy eBPF driver: add `-e FALCO_BPF_PROBE=""` to the docker run command.
+- 🚨 **macOS / Apple Silicon — Falco starts but detects nothing** — Docker Desktop runs a stripped LinuxKit VM whose kernel ships without BTF (and the raw tracepoints Falco's modern-eBPF probe attaches to), so Falco loads cleanly and stays blind. This is **not** a CPU/arch problem — the image is multi-arch (arm64 included) — it's the VM kernel. Fix: give Falco a real Ubuntu kernel via **Colima** (free, Homebrew, a Lima-based Docker backend whose VM has BTF):
+  ```bash
+  brew install colima docker
+  colima start --cpu 4 --memory 6 --disk 30
+  # Gate check — must print "BTF OK" before you bother running Falco:
+  colima ssh -- test -f /sys/kernel/btf/vmlinux && echo "BTF OK"
+  ```
+  Colima becomes your Docker backend, so steps 9.1–9.5 run **unchanged** (clone the repo under your home dir — Colima mounts `$HOME` into the VM). The universal 5-second check for *any* environment: `test -f /sys/kernel/btf/vmlinux` — present ⇒ modern eBPF attaches; absent (Docker Desktop) ⇒ Falco is blind. Task 2 (Conftest) is pure userspace — `brew install conftest` and run it natively on macOS, no VM needed. *(A plain Ubuntu VM via multipass/Lima/UTM works too; Colima is just the least-disruptive since it keeps the Docker CLI workflow.)*
 - 🚨 **Falco dies with `could not initialize inotify handler`** — WSL2 / crowded-Docker hosts hit the default `fs.inotify.max_user_instances=128` (same wall as Lab 7). Two fixes: (a) as root, `sysctl -w fs.inotify.max_user_instances=1024`; or (b) if you can't sudo, append `-o watch_config_files=false` to the `falco ...` command — Falco then starts without the file watcher, and you reload rules manually with the `SIGHUP` step below (which doesn't need inotify).
 - 🚨 **No alerts fire after triggering** — Falco needs a few seconds to load rules. Wait 5+ seconds between starting Falco and triggering. Also confirm rules loaded with `docker logs falco | grep -i "loaded rule"`.
 - 🚨 **Custom rule has YAML parse error and silently doesn't load** — `docker logs falco | grep -i error` shows the parse error. Common cause: indentation. Validate with `yq eval . custom-rules.yaml`.
